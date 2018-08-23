@@ -134,7 +134,6 @@ class Meme(object):
             return output_img[0]
         else:
             img.convert('RGBA')
-            img.paste(text_img, text_img)
             if output_file is not None:
                 img.save(output_file)
             return img
