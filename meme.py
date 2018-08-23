@@ -40,12 +40,15 @@ FONT_PADDING = 2
 class Meme(object):
     def __init__(self, input=None):
         self.input = input
-        self.top = None
-        self.mid = None
-        self.bot = None
+        self.top = ''
+        self.mid = ''
+        self.bot = ''
         self.top_align = HALIGN_CENTER
         self.mid_align = HALIGN_CENTER
         self.bot_align = HALIGN_CENTER
+
+    def set_input(self, input):
+        self.input = input
 
     def set_top(self, top):
         self.top = top
@@ -85,11 +88,11 @@ class Meme(object):
         else:
             raise ValueError()
 
-    def render(self, output_file):
+    def render(self, output_file=None):
         img = Image.open(self.input)
-        text_img = make_meme_text(img.size, self.top, self.mid, self.bot,
-                                  self.top_align, self.mid_align,
-                                  self.bot_align)
+        text_img = make_meme_text(img.size, self.top.upper(), self.mid.upper(),
+                                  self.bot.upper(), self.top_align,
+                                  self.mid_align, self.bot_align)
         if img.format == 'GIF':
             output_img = []
             for frame in ImageSequence.Iterator(img):
@@ -97,17 +100,52 @@ class Meme(object):
                 frame.paste(text_img, text_img)
                 output_img.append(frame)
 
-            output_img[0].save(
-                output_file,
-                save_all=True,
-                append_images=output_img[1:],
-                duration=img.info['duration'],
-                loop=0)
+            if output_file is not None:
+                output_img[0].save(
+                    output_file,
+                    save_all=True,
+                    append_images=output_img[1:],
+                    duration=img.info['duration'],
+                    loop=0)
+            return output_img[0]
         else:
             img.convert('RGBA')
             img.paste(text_img, text_img)
-            img.save(output_file)
-        text_img.save('test_text.gif')
+            if output_file is not None:
+                img.save(output_file)
+            return img
+
+    # This should be greatly simplified
+    def render_no_text(self, output_file=None):
+        img = Image.open(self.input)
+        if img.format == 'GIF':
+            output_img = []
+            for frame in ImageSequence.Iterator(img):
+                frame = frame.convert('RGBA')
+                output_img.append(frame)
+
+            if output_file is not None:
+                output_img[0].save(
+                    output_file,
+                    save_all=True,
+                    append_images=output_img[1:],
+                    duration=img.info['duration'],
+                    loop=0)
+            return output_img[0]
+        else:
+            img.convert('RGBA')
+            img.paste(text_img, text_img)
+            if output_file is not None:
+                img.save(output_file)
+            return img
+
+    def render_text_image(self, output_file):
+        img = Image.open(self.input)
+        text_img = make_meme_text(img.size, self.top.upper(), self.mid.upper(),
+                                  self.bot.upper(), self.top_align,
+                                  self.mid_align, self.bot_align)
+        text_img.save(output_file)
+
 
 
 def text_outline(img, text, align, halign, outline_size=2):
@@ -134,7 +172,7 @@ def text_outline(img, text, align, halign, outline_size=2):
     else:
         raise ValueError()
 
-    ypos = outline_size - yoffset/2
+    ypos = outline_size - yoffset / 2
     if align == ALIGN_TOP:
         ypos += FONT_PADDING
     elif align == ALIGN_MID:
